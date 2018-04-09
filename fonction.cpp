@@ -3,98 +3,97 @@
 
 void charge(int N, int Np, int Me, int& i1, int& iN)
 {
-  int q = floor((double)N/(double)Np);
+  int q = N/Np;
   int r = N - q*Np;
 
   if (Me < r)
-    {
-      i1 = (q+1)*Me;
-      iN = (q+1)*(Me+1)-1;
-    }
-  else
-    {
-      i1 = q*Me + r;
-      iN = q*(Me+1) + r - 1;
-    }
-}
-
-//---------------------------------------------------------------
-
-int prodMV(int argc, char * argv[], std::vector<std::vector<double> > A, std::vector<double> x)
-{
-  
-  int N;
-  N = x.size();
-  int i1, iN, j1, jN, r;
-  int Me, Np;
-  std::vector<double> y,yloc;
-  y.resize(N); yloc.resize(N);
-
-  
-  for (int i=0; i<N; i++)
-    {
-      y[i] = 0;
-    }
-
-  MPI_Status status;
-  MPI_Init(&argc,&argv);
-  MPI_Comm_size(MPI_COMM_WORLD, &Np); // get totalnodes
-  MPI_Comm_rank(MPI_COMM_WORLD, &Me);
-  
-  charge(N,Np,Me,i1,iN);
-
-  std::cout << "Je suis le proc " << Me << " je commence à : " << i1 << " et je termine à : " << iN << std::endl;
-
-
-  //Calcul local de Y
-  
-  yloc.resize(iN-i1+1);
-  
-  for (int i=i1; i<iN+1; i++)
-    {
-      yloc[i-i1] = 0;
-      for (int j=0; j<N; j++)
-	{
-	  yloc[i-i1] = yloc[i-i1] + A[i][j]*x[j];
-	}
-    }
-  
-  if(Me!=0){
-    MPI_Send(&yloc[0],iN-i1+1,MPI_DOUBLE,0,100,MPI_COMM_WORLD);
+  {
+    i1 = (q+1)*Me;
+    iN = (q+1)*(Me+1)-1;
   }
   else
-    {
-      for (int i=i1; i<iN+1; i++){
-	y[i] = yloc[i-i1];
-      }
-      for (int he=1; he<Np; he++){
-
-	charge(N,Np,he,j1,jN);
-
-	yloc.resize(jN-j1+1);
-
-	MPI_Recv(&yloc[0],jN-j1+1,MPI_DOUBLE,he,100,MPI_COMM_WORLD, &status);
-
-	for (int i=j1; i<jN+1; i++){
-	  y[i] = yloc[i-j1];
-	}
-      }
-    }
-
-  
-  if (Me==0){
-    std::cout<<"Valeur du produit AX ="<<std::endl;
-    for (int i=0; i<N; i++)
-      {
-	std::cout << i << " " << y[i] << std::endl;
-      }
+  {
+    i1 = q*Me + r;
+    iN = q*(Me+1) + r - 1;
   }
-
-  MPI_Finalize(); 
-  return 0;
 }
 
-//-------------------------------------------------------------
+// int prodMV(int argc, char * argv[], std::vector<std::vector<double> > A, std::vector<double> x)
+// {
+//
+//   int N;
+//   N = x.size();
+//   int i1, iN, j1, jN, r;
+//   int Me, Np;
+//   std::vector<double> y,yloc;
+//   y.resize(N); yloc.resize(N);
+//
+//
+//   for (int i=0; i<N; i++)
+//     {
+//       y[i] = 0;
+//     }
+//
+//   MPI_Status status;
+//   MPI_Init(&argc,&argv);
+//   MPI_Comm_size(MPI_COMM_WORLD, &Np); // get totalnodes
+//   MPI_Comm_rank(MPI_COMM_WORLD, &Me);
+//
+//   charge(N,Np,Me,i1,iN);
+//
+//   std::cout << "Je suis le proc " << Me << " je commence à : " << i1 << " et je termine à : " << iN << std::endl;
+//
+//
+//   //Calcul local de Y
+//
+//   yloc.resize(iN-i1+1);
+//
+//   for (int i=i1; i<iN+1; i++)
+//     {
+//       yloc[i-i1] = 0;
+//       for (int j=0; j<N; j++)
+// 	{
+// 	  yloc[i-i1] = yloc[i-i1] + A[i][j]*x[j];
+// 	}
+//     }
+//
+//   if(Me!=0){
+//     MPI_Send(&yloc[0],iN-i1+1,MPI_DOUBLE,0,100,MPI_COMM_WORLD);
+//   }
+//   else
+//     {
+//       for (int i=i1; i<iN+1; i++){
+// 	y[i] = yloc[i-i1];
+//       }
+//       for (int he=1; he<Np; he++){
+//
+// 	charge(N,Np,he,j1,jN);
+//
+// 	yloc.resize(jN-j1+1);
+//
+// 	MPI_Recv(&yloc[0],jN-j1+1,MPI_DOUBLE,he,100,MPI_COMM_WORLD, &status);
+//
+// 	for (int i=j1; i<jN+1; i++){
+// 	  y[i] = yloc[i-j1];
+// 	}
+//       }
+//     }
+//
+//
+//   if (Me==0){
+//     std::cout<<"Valeur du produit AX ="<<std::endl;
+//     for (int i=0; i<N; i++)
+//       {
+// 	std::cout << i << " " << y[i] << std::endl;
+//       }
+//   }
+//
+//   MPI_Finalize();
+//   return 0;
+// }
+//
+// //-------------------------------------------------------------
+//
 
 std::vector<double> prodMVC(std::vector<std::vector<double> > Aloc, std::vector<double> xloc, int nx, int ny)
 {
@@ -301,64 +300,42 @@ std::vector<double> vectorsplit(std::vector<double> u)
   return uloc;
 }
 
-
-//-----------------------------------------------------------------
-
-void Diag_init(int nx, int ny, std::vector<double>& D1, std::vector<double>& D2, std::vector<double>& D3, std::vector<double>& D4, std::vector<double>& D5)
+void Diag_init(int nx, int ny, std::vector<std::vector<double> >& A)
 {
 
   double alpha, beta, gamma, dx, dy;
   int N = nx*ny;
-  
   dx = 1./(nx+1);
   dy = 1./(ny+1);
   alpha = 2./(dx*dx)+2./(dy*dy);
   beta = -1./(dx*dx);
   gamma = -1./(dy*dy);
+  A.resize(5);
+  for(int i = 0; i < 5; i++)
+  {
+    A[i].resize(N);
+  }
 
   for (int i=0; i<N; i++)
     {
-      D1[i]=gamma;
-      D2[i]=beta;
-      D3[i]=alpha; 
-      D4[i]=beta;
-      D5[i]=gamma;
-      
-      if (i%nx==0)
-	D2[i]=0.;
+      A[0][i]=5;
+      A[1][i]=4;
+      A[2][i]=20;
+      A[3][i]=4;
+      A[4][i]=5;
 
-      if (i%(nx-1)==0)
-	D4[i]=0.;
-
-      if(i<nx)
-	D1[i]=0.;
-
-      if(i>(ny-1)*nx-1)
-	D5[i]=0.;
+  //     if (i%nx==0)
+	// A[1][i]=0.;
+  //
+  //     if (i%(nx-1)==0)
+	// A[3][i]=0.;
+  //
+  //     if(i<nx)
+	// A[0][i]=0.;
+  //
+  //     if(i>(ny-1)*nx-1)
+	// A[4][i]=0.;
     }
-}
-
-void printvect(std::vector<double> uloc)
-{
-  int Me, Np;
-  MPI_Comm_rank(MPI_COMM_WORLD, &Me);
-  MPI_Comm_size(MPI_COMM_WORLD, &Np); // get totalnodes
-  for (int i =0; i < Np; i++)
-    {
-      if (Me == i)
-      {
-        std::cout << "Me = " << i << std::endl;
-        for (int j = 0; j < uloc.size(); j++)
-        {
-          std::cout << uloc[j] << std::endl;
-        }
-      }
-      MPI_Barrier(MPI_COMM_WORLD);
-    }
-  if (Me == Np-1)
-  {
-    std::cout << "fin affichage" << std::endl;
-  }
 }
 
 std::vector<double> CGPara (std::vector<std::vector<double> > Aloc, std::vector<double> bloc, std::vector<double> x0loc , double err, int kmax, int nx, int ny)
@@ -425,4 +402,27 @@ std::vector<double> CGPara (std::vector<std::vector<double> > Aloc, std::vector<
 
   return xloc;
 
+}
+
+void printvect(std::vector<double> uloc)
+{
+  int Me, Np;
+  MPI_Comm_rank(MPI_COMM_WORLD, &Me);
+  MPI_Comm_size(MPI_COMM_WORLD, &Np); // get totalnodes
+  for (int i =0; i < Np; i++)
+    {
+      if (Me == i)
+      {
+        std::cout << "Me = " << i << std::endl;
+        for (int j = 0; j < uloc.size(); j++)
+        {
+          std::cout << uloc[j] << std::endl;
+        }
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
+  if (Me == Np-1)
+  {
+    std::cout << "fin affichage" << std::endl;
+  }
 }
