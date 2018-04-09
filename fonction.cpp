@@ -110,15 +110,17 @@ std::vector<double> prodMVC(std::vector<std::vector<double> > Aloc, std::vector<
 
   charge(N,Np,Me,i1,iN);
 
+  int Nloc = iN-i1+1;
+
   if (Me%2 == 0)
   {
     if (Me != Np-1)
     {
-      MPI_Send(&xloc[iN-nx+1],nx,MPI_DOUBLE,Me+1,100,MPI_COMM_WORLD);
+      MPI_Send(&xloc[Nloc-nx],nx,MPI_DOUBLE,Me+1,100,MPI_COMM_WORLD);
     }
     if (Me != 0)
     {
-      MPI_Send(&xloc[i1],nx,MPI_DOUBLE,Me-1,100,MPI_COMM_WORLD);
+      MPI_Send(&xloc[0],nx,MPI_DOUBLE,Me-1,100,MPI_COMM_WORLD);
     }
   }
   else
@@ -134,9 +136,9 @@ std::vector<double> prodMVC(std::vector<std::vector<double> > Aloc, std::vector<
   {
     if (Me != Np-1)
     {
-      MPI_Send(&xloc[iN-nx+1],nx,MPI_DOUBLE,Me+1,100,MPI_COMM_WORLD);
+      MPI_Send(&xloc[Nloc-nx],nx,MPI_DOUBLE,Me+1,100,MPI_COMM_WORLD);
     }
-    MPI_Send(&xloc[i1],nx,MPI_DOUBLE,Me-1,100,MPI_COMM_WORLD);
+    MPI_Send(&xloc[0],nx,MPI_DOUBLE,Me-1,100,MPI_COMM_WORLD);
   }
   else
   {
@@ -334,4 +336,93 @@ void Diag_init(int nx, int ny, std::vector<double>& D1, std::vector<double>& D2,
       if(i>(ny-1)*nx-1)
 	D5[i]=0.;
     }
+}
+
+void printvect(std::vector<double> uloc)
+{
+  int Me, Np;
+  MPI_Comm_rank(MPI_COMM_WORLD, &Me);
+  MPI_Comm_size(MPI_COMM_WORLD, &Np); // get totalnodes
+  for (int i =0; i < Np; i++)
+    {
+      if (Me == i)
+      {
+        std::cout << "Me = " << i << std::endl;
+        for (int j = 0; j < uloc.size(); j++)
+        {
+          std::cout << uloc[j] << std::endl;
+        }
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
+  if (Me == Np-1)
+  {
+    std::cout << "fin affichage" << std::endl;
+  }
+}
+
+std::vector<double> CGPara (std::vector<std::vector<double> > Aloc, std::vector<double> bloc, std::vector<double> x0loc , double err, int kmax, int nx, int ny)
+{
+
+  int i1, iN, Nloc, k, Me, Np;
+
+  double norm_r, nr_carre, nr2_carre;
+  std::vector<double> wloc, rloc, r_1loc, ploc, dloc, xloc;
+
+  MPI_Status status;
+  MPI_Comm_size(MPI_COMM_WORLD, &Np); // get totalnodes
+  MPI_Comm_rank(MPI_COMM_WORLD, &Me);
+
+  charge(nx*ny,Np,Me,i1,iN);
+
+  Nloc = iN-i1 +1;
+
+  wloc.resize(Nloc); rloc.resize(Nloc); ploc.resize(Nloc); dloc.resize(Nloc);
+
+  xloc = x0loc;
+
+  wloc = prodMVC(Aloc,xloc,nx,ny);
+
+  for (int i = 0; i < Nloc; i++)
+  {
+    rloc[i] = bloc[i] - wloc[i];
+  }
+  ploc = rloc;
+
+  k = 0;
+
+  nr_carre = dot(rloc,rloc);
+  norm_r = sqrt(nr_carre);
+
+
+  while ((norm_r > err) and (k<kmax))
+    {
+      dloc = prodMVC(Aloc,ploc,nx,ny);
+
+      double alpha = nr_carre/dot(ploc,dloc);
+
+      for (int i = 0; i < Nloc; i++)
+      {
+        xloc[i] += alpha*ploc[i];
+        rloc[i] -= alpha*dloc[i]; //rk devient r(k+1)
+      }
+
+      nr2_carre = dot(rloc,rloc); //norme de r(k+1)
+
+      double beta = nr2_carre/nr_carre;
+
+      for (int i = 0; i < Nloc; i++)
+      {
+        ploc[i] = rloc[i] + beta*ploc[i];
+      }
+
+      nr_carre = nr2_carre;
+      norm_r = sqrt(nr_carre);
+
+      k++;
+    }
+
+
+  return xloc;
+
 }
