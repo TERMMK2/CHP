@@ -5,23 +5,56 @@
 
 int main(int argc, char * argv[])
 {
-  const int nx=10;
-  const int ny=10;
+  MPI_Status status;
+  MPI_Init(&argc,&argv);
+  int Me, Np;
+  double err = 1.e-4;
+  int kmax = 100000;
+
+  const int nx=2;
+  const int ny=3;
   int N = nx*ny;
   //double alpha, beta, gamma, dx, dy;
-  std::vector<std::vector<double> > A;
-  A.resize(N);
-  std::vector<double> x,D1,D2,D3,D4,D5;
-  x.resize(N); D1.resize(N); D2.resize(N); D3.resize(N); D4.resize(N); D5.resize(N);
+  std::vector<std::vector<double> > A, Aloc;
+  std::vector<double> x,x0,bloc,xloc,x0loc;
+  x.resize(N);
+  x0.resize(N);
 
- 
 
   for (int i=0 ; i<N; i++)
+  {
     x[i] = 1.;
+    x0[i] = 0.;
+  }
 
-  Diag_init(nx,ny,D1,D2,D3,D4,D5); //Initialisation des diagonales de la matrice A
-  prodMVC(argc,argv,D1,D2,D3,D4,D5,x,nx,ny); //Produit Matrice-Vecteur creux
+  xloc = vectorsplit(x);
+  x0loc = vectorsplit(x0);
 
+  Diag_init(nx,ny,A); //Initialisation des diagonales de la matrice A
+  Aloc.resize(5);
+  for (int i = 0; i < 5; i++)
+  {
+    Aloc[i] = vectorsplit(A[i]);
+  }
+  bloc = prodMVC(Aloc,xloc,nx,ny); //Produit Matrice-Vecteur creux
+
+  // if (Me == 0)
+  // {
+  //   std::cout << "b =" << std::endl;
+  // }
+  // printvect(bloc);
+
+  xloc = CGPara (Aloc, bloc, x0loc, err, kmax, nx, ny);
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &Me);
+
+  if (Me == 0)
+  {
+    std::cout << "x =" << std::endl;
+  }
+  printvect(xloc);
+
+  MPI_Finalize();
   return 0;
 }
 
