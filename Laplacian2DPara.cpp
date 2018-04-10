@@ -201,7 +201,7 @@ void EC_ClassiqueP::IterativeSolver (int nb_iterations)
 
   for( int i=0 ; i<=nb_iterations ; i++)
     {
-      //EC_ClassiqueP::SaveSol("EC_ClassiqueP/sol_it_"+to_string(i)+".vtk"); // -> a changer pour enregistrer la solution de chaque proc puis ensuite faire un truc pour reconbiner
+      EC_ClassiqueP::SaveSol("EC_ClassiqueP/sol_it_"+to_string(i)+".vtk"); // -> a changer pour enregistrer la solution de chaque proc puis ensuite faire un truc pour reconbiner
       /*
       if(_Me ==0)
 	{
@@ -250,6 +250,22 @@ void EC_ClassiqueP::IterativeSolver (int nb_iterations)
       // _floc = _solloc;
       int kmax = _Nx*_Ny +100; //En dimension n le GC met max n étapes en théorie
       _solloc = CGPara(_LapMatloc,_solloc,_solloc,0.0001,kmax,_Nx,_Ny);
+
+      if (_Me == 0)//Barre de chargement
+	{
+	  int i_barre;
+	  int p = floor((((double)i)/((double)nb_iterations))*100);
+	  printf( "[" );
+	  for(i_barre=0;i_barre<=p;i_barre+=2) printf( "*" );
+	  for (;i_barre<100; i_barre+=2 ) printf( "-" );
+	  printf( "] %3d %%", p );
+	  
+	  for(i_barre=0;i_barre<59;++i_barre) printf( "%c", 8 );
+	  
+	  fflush(stdout );
+	}
+
+
     }
 
   /*
@@ -261,7 +277,11 @@ void EC_ClassiqueP::IterativeSolver (int nb_iterations)
 	}
 
     }
-*/
+  */
+
+  if (_Me == 0)//Barre de chargement
+    { printf("\n");}
+
 
 }
 

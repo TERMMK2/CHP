@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <stdio.h>
 #include "mpi.h"
 #include "fonction.h"
 
