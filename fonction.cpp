@@ -18,98 +18,27 @@ void charge(int N, int Np, int Me, int& i1, int& iN)
   }
 }
 
-// int prodMV(int argc, char * argv[], std::vector<std::vector<double> > A, std::vector<double> x)
-// {
-//
-//   int N;
-//   N = x.size();
-//   int i1, iN, j1, jN, r;
-//   int Me, Np;
-//   std::vector<double> y,yloc;
-//   y.resize(N); yloc.resize(N);
-//
-//
-//   for (int i=0; i<N; i++)
-//     {
-//       y[i] = 0;
-//     }
-//
-//   MPI_Status status;
-//   MPI_Init(&argc,&argv);
-//   MPI_Comm_size(MPI_COMM_WORLD, &Np); // get totalnodes
-//   MPI_Comm_rank(MPI_COMM_WORLD, &Me);
-//
-//   charge(N,Np,Me,i1,iN);
-//
-//   std::cout << "Je suis le proc " << Me << " je commence à : " << i1 << " et je termine à : " << iN << std::endl;
-//
-//
-//   //Calcul local de Y
-//
-//   yloc.resize(iN-i1+1);
-//
-//   for (int i=i1; i<iN+1; i++)
-//     {
-//       yloc[i-i1] = 0;
-//       for (int j=0; j<N; j++)
-// 	{
-// 	  yloc[i-i1] = yloc[i-i1] + A[i][j]*x[j];
-// 	}
-//     }
-//
-//   if(Me!=0){
-//     MPI_Send(&yloc[0],iN-i1+1,MPI_DOUBLE,0,100,MPI_COMM_WORLD);
-//   }
-//   else
-//     {
-//       for (int i=i1; i<iN+1; i++){
-// 	y[i] = yloc[i-i1];
-//       }
-//       for (int he=1; he<Np; he++){
-//
-// 	charge(N,Np,he,j1,jN);
-//
-// 	yloc.resize(jN-j1+1);
-//
-// 	MPI_Recv(&yloc[0],jN-j1+1,MPI_DOUBLE,he,100,MPI_COMM_WORLD, &status);
-//
-// 	for (int i=j1; i<jN+1; i++){
-// 	  y[i] = yloc[i-j1];
-// 	}
-//       }
-//     }
-//
-//
-//   if (Me==0){
-//     std::cout<<"Valeur du produit AX ="<<std::endl;
-//     for (int i=0; i<N; i++)
-//       {
-// 	std::cout << i << " " << y[i] << std::endl;
-//       }
-//   }
-//
-//   MPI_Finalize();
-//   return 0;
-// }
-//
-// //-------------------------------------------------------------
-//
+
 
 std::vector<double> prodMVC(std::vector<std::vector<double> > Aloc, std::vector<double> xloc, int nx, int ny)
 {
   int N, i1, iN, Me, Np;
   N = nx*ny;
-  std::vector<double> x_haut, x_bas, yloc; //x_haut contient les éléments voisins du dessus
+  std::vector<double> x_haut, x_bas, yloc; //x_haut contient les éléments voisins du dessus et x_bas ceux du dessous.
   x_bas.resize(nx);
   x_haut.resize(nx);
 
+
   MPI_Status status;
-  MPI_Comm_size(MPI_COMM_WORLD, &Np); // get totalnodes
+  MPI_Comm_size(MPI_COMM_WORLD, &Np); 
   MPI_Comm_rank(MPI_COMM_WORLD, &Me);
 
   charge(N,Np,Me,i1,iN);
 
   int Nloc = iN-i1+1;
+
+
+  //QU'EST-CE QUE VOUS AVEZ FAIT ? COMMENTEZ UN PEU !
 
   if (Me%2 == 0)
   {
@@ -150,6 +79,9 @@ std::vector<double> prodMVC(std::vector<std::vector<double> > Aloc, std::vector<
       MPI_Recv(&x_bas[0],nx,MPI_DOUBLE,Me+1,100,MPI_COMM_WORLD, &status);
     }
   }
+  //Après c'est plutôt pas trop mal commenté
+
+
 
   //Calcul local de Y
 
@@ -266,8 +198,11 @@ std::vector<double> prodMVC(std::vector<std::vector<double> > Aloc, std::vector<
   return yloc;
 }
 
-double dot(std::vector<double> uloc, std::vector<double> vloc)
+double dot(std::vector<double> uloc, std::vector<double> vloc) 
 {
+  // //Calcul le produit scalaire entre 2 vecteur et envoie le résultat à tout les processeurs.
+
+
   int Nloc = uloc.size();
   double y,yloc;
 
@@ -283,8 +218,13 @@ double dot(std::vector<double> uloc, std::vector<double> vloc)
   return y;
 }
 
+
+
+
 std::vector<double> vectorsplit(std::vector<double> u)
 {
+  // //Permet de "découper" un vecteur global en vecteurs locaux.
+
   int N, Np, Me, i1, iN;
   std::vector<double> uloc;
   MPI_Status status;
@@ -300,8 +240,15 @@ std::vector<double> vectorsplit(std::vector<double> u)
   return uloc;
 }
 
+
+
+
 void Diag_init(int nx, int ny, std::vector<std::vector<double> >& A)
 {
+  // IL SERT A QUELQUE CHOSE CE TRUC ????
+
+  // SI NON LE VIRER !
+
 
   double alpha, beta, gamma, dx, dy;
   int N = nx*ny;
@@ -340,6 +287,10 @@ void Diag_init(int nx, int ny, std::vector<std::vector<double> >& A)
 
 std::vector<double> CGPara (std::vector<std::vector<double> > Aloc, std::vector<double> bloc, std::vector<double> x0loc , double err, int kmax, int nx, int ny)
 {
+  // // Algorithme du gradient conjugué parallèle qui prend en argument uniquement des vecteurs locaux et renvoie un vecteur local.
+
+
+  // CODE A COMMENTER !
 
   int i1, iN, Nloc, k, Me, Np;
 
@@ -406,6 +357,9 @@ std::vector<double> CGPara (std::vector<std::vector<double> > Aloc, std::vector<
 
 void printvect(std::vector<double> uloc)
 {
+  // // Fonction qui permet d'afficher les composante d'un vecteur global en gardant la configuration locale. Cette fonction n'est plus utilisée dans le code mais nous a permis de le débugger.
+
+
   int Me, Np;
   MPI_Comm_rank(MPI_COMM_WORLD, &Me);
   MPI_Comm_size(MPI_COMM_WORLD, &Np); // get totalnodes

@@ -10,8 +10,10 @@ Laplacian2D::Laplacian2D()
 Laplacian2D::~Laplacian2D()
 {}
 
-void Laplacian2D::Initialize(double x_min, double x_max, double y_min, double y_max, int Nx, int Ny, double a, double deltaT, int Me, int Np)
+void Laplacian2D::Initialize(double x_min, double x_max, double y_min, double y_max, int Nx, int Ny, double a, double deltaT, int Me, int Np, string Source)
 {
+  // // On  initialise les constantes connues de tous les processeurs.
+
   _x_min = x_min;
   _y_min = y_min;
   _x_max = x_max;
@@ -24,10 +26,13 @@ void Laplacian2D::Initialize(double x_min, double x_max, double y_min, double y_
   _h_x = (x_max-x_min)/(Nx+1.);
   _Me = Me;
   _Np = Np;
+  _Source = Source;
 }
 
 void Laplacian2D::InitializeCI(double CI)
 {
+  // // On initialise le vecteur solution ici.
+
   int i1,iN;
   charge(_Nx*_Ny,_Np,_Me,i1,iN);
 
@@ -36,10 +41,15 @@ void Laplacian2D::InitializeCI(double CI)
     {
       _solloc[i] = CI;
     }
+
+  //On met _floc de la bonne taille ici  :
+  _floc.resize(iN-i1+1);
 }
 
 void Laplacian2D::InitializeCL(std::string CL_bas, std::string CL_haut, std::string CL_gauche, std::string CL_droite, double Val_CL_bas, double Val_CL_haut, double Val_CL_gauche, double Val_CL_droite)
 {
+  // // On initialise les condition limites ici. La configuration quelque peu redondante avec Laplacian2D::Initialize vient d'une ancienne version du code de notre TER dans laquelle on initialisait toutes ces valeures dans le main et où on ne souhaitait pas avoir trop d'argument dans la méthode Initialize.
+
   _CL_bas = CL_bas;
   _CL_haut = CL_haut;
   _CL_gauche = CL_gauche;
@@ -52,6 +62,8 @@ void Laplacian2D::InitializeCL(std::string CL_bas, std::string CL_haut, std::str
 
 void Laplacian2D::UpdateCL(int num_it)
 {
+  //Cette méthode de classe nous permet de faire une condition au limites de Neumann variable au cours du temps. C'est avec cela que nous avons fait notre test pour vérifier notre code.
+
   double t = num_it*_deltaT;
   if (t <= 50.)
     {
@@ -65,8 +77,9 @@ void Laplacian2D::UpdateCL(int num_it)
 
 void EC_ClassiqueP::InitializeMatrix()
 {
-  system("rm -Rf EC_ClassiqueP");
-  system("mkdir -p ./EC_ClassiqueP");
+  // // On initialise la matrice penta diagonale ici.
+
+
 
   vector<vector <double> > LapMat;
   LapMat.resize(5);
@@ -158,7 +171,19 @@ void EC_ClassiqueP::InitializeMatrix()
 
 void EC_ClassiqueP::IterativeSolver (int nb_iterations)
 {
-  //c'est le bordel pour  afficher les solutions en des points particuliers mais je vais changer ça quand j'aurais le temps, en attendant ça marche.
+  // // Cette méthode est au coeur de la résolution du problème et elle nous permet de générer le résultat. <- PEUT MIEUX FAIRE
+
+  //c'est le bordel pour  afficher les solutions en des points particuliers mais je vais changer ça quand j'aurais le temps, en attendant ça marche. <- Je le fais demain, j'ai pas eu le temps.
+
+  system("rm -Rf EC_ClassiqueP");
+  system("mkdir -p ./EC_ClassiqueP");
+
+  MPI_Status status;
+
+  int i1,iN;
+  charge(_Nx*_Ny,_Np,_Me,i1,iN);
+  int Nloc = iN-i1 +1;
+
 
   /*
   string _save_points_file ="sol_points_para";
@@ -175,12 +200,7 @@ void EC_ClassiqueP::IterativeSolver (int nb_iterations)
       _saved_points[i][1] = 0.0025;
     }
 
-
-
-  MPI_Status status;
-
-  int i1,iN;
-  charge(_Nx*_Ny,_Np,_Me,i1,iN);
+ 
 
   vector<double> _sol;
 
@@ -247,9 +267,34 @@ void EC_ClassiqueP::IterativeSolver (int nb_iterations)
 	  }*/
 
       EC_ClassiqueP::ConditionsLimites(i);  // -> a changer pour faire des vecteurs locaux
-      // _floc = _solloc;
-      int kmax = _Nx*_Ny +100; //En dimension n le GC met max n étapes en théorie
-      _solloc = CGPara(_LapMatloc,_solloc,_solloc,0.0001,kmax,_Nx,_Ny);
+      //--------------------------------------------------------------------------
+      //Prise en compte du terme source :
+      for (int k=0 ; k < Nloc ;k++)
+	{
+	  int num = i1 + k;
+	  double x = (num%_Nx)*_h_x;
+	  double y = (num/_Nx)*_h_y; 
+
+	  if (_Source == "non")
+	    {
+	      _floc[k] = _solloc[k];
+	    }
+	  
+	  if (_Source == "polynomial")
+	    {
+	       
+	      _floc[k] = _solloc[k] + 2*(y - y*y + x -x*x);
+	    }
+	  if(_Source == "trigonometrique")
+	    {
+	      _floc[k] = _solloc[k] + sin(x) +cos(y) ;
+	    }
+	}
+      
+      //------------------------------------------------------------------------
+      int kmax = _Nx*_Ny +100; //Pour une matrice de taille n le GC met max n étapes en théorie, comme on veut être sûr qu'il converge 
+      
+      _solloc = CGPara(_LapMatloc,_floc,_solloc,0.0001,kmax,_Nx,_Ny);
 
       if (_Me == 0)//Barre de chargement
 	{
@@ -287,6 +332,8 @@ void EC_ClassiqueP::IterativeSolver (int nb_iterations)
 
 void Laplacian2D::SaveSol(string name_file)
 {
+  // // Cette méthode est celle qui nous permet d'enregistrer la solution sous forme de fichier lisible par paraview. Pour cela, elle envoie tout les vecteur locaux de la solution vers le processeur 0, qui va se charger de reformer le vecteur solution global puis d'écrire le résultat dans le bon format.
+
   MPI_Status status;
 
   int i1,iN;
@@ -312,7 +359,6 @@ void Laplacian2D::SaveSol(string name_file)
 
 	  for (int i=he_i1; i<=he_iN ; i++)
 	    {
-	      //cout<<_Me<<" "<<i<<" "<<sol_temp[i]<<endl;;
 	      sol[i] = sol_temp[i-he_i1];
 	    }
 	}
@@ -344,9 +390,6 @@ void Laplacian2D::SaveSol(string name_file)
     }
   else
     {
-      //for (int i=0; i<_solloc.size() ;i++){
-      //cout<<_Me<<" "<<i<<" "<<_solloc[i]<<endl;
-      //}
       MPI_Send(&_solloc[0],iN-i1+1,MPI_DOUBLE,0,100*_Me,MPI_COMM_WORLD);
     }
 
@@ -355,6 +398,8 @@ void Laplacian2D::SaveSol(string name_file)
 
 void EC_ClassiqueP::ConditionsLimites(int num_it)
 {
+  // // Cette méthode nous permet de mettre à jours le terme source à chaque itération pour prendre en compte les effets des conditions limites.
+
   int i1,iN;
   double gamma = -_a*_deltaT/(_h_y*_h_y);
   double beta = -_a*_deltaT/(_h_x*_h_x);
@@ -441,4 +486,20 @@ void EC_ClassiqueP::ConditionsLimites(int num_it)
 	    _solloc[(i+1)*_Nx - 1 -i1] = _solloc[(i+1)*_Nx - 1 -i1]-beta*_Val_CL_droite*_h_x;
         }
      }
+
+
+  // if (_Source == "trigonometrique")
+  //   {
+  //     for (int j = 0; j < _Nx ; j++)
+  //       {
+  // 	  double x
+  // 	  if ((j<=iN) and (j>=i1))
+  // 	    _solloc[j-i1] = _solloc[j-i1]-gamma*_Val_CL_haut;
+  //       }
+
+
+
+
+  //   }
+
 }

@@ -2,33 +2,15 @@
 CC=g++
 CC_para=mpic++ 
 
-#Chemin Eigen
-path=~/Tp\ info/2A/EigenLibrary/Eigen
 
-# Options en mode optimisé - La variable NDEBUG est définie
-OPTIM_FLAG = -O3 -DNDEBUG -I $(path) -std=c++11 -Wall
-# Options en mode debug
-DEBUG_FLAG = -g -I $(path) -std=c++11 -Wall
-
-# On choisit comment on compile
-CXX_FLAGS = $(DEBUG_FLAG)
-
-# Le nom de l'exécutable
-PROG = run
-
-# Les fichiers source à compiler
-SRC = main.cc Laplacian2D.cpp Datafile.cpp
-
-# La commande complète : compile seulement si un fichier a été modifié
-$(PROG) : $(SRC)
-	$(CC) $(SRC) $(CXX_FLAGS) -o $(PROG)
+run : main.cc
+	$(CC_para) -std=c++11  mainPara.cc fonction.cpp Laplacian2DPara.cpp  -o run
 
 #si on a des trucs a tester :
 test : test.cc 
 	$(CC) test.cc  $(CXX_FLAGS) -o run_test
 
-Para : main.cc
-	$(CC_para) -std=c++11  mainPara.cc fonction.cpp Laplacian2DPara.cpp  -o run_Para
+
 
 
 # Supprime l'exécutable, les fichiers binaires (.o) et les fichiers
