@@ -59,7 +59,7 @@ void Laplacian2D::InitializeCI(double CI)
 
 void Laplacian2D::InitializeCL(std::string CL_bas, std::string CL_haut, std::string CL_gauche, std::string CL_droite, double Val_CL_bas, double Val_CL_haut, double Val_CL_gauche, double Val_CL_droite)
 {
-  // // On initialise les condition limites ici. La configuration quelque peu redondante avec Laplacian2D::Initialize vient d'une ancienne version du code de notre TER dans laquelle on initialisait toutes ces valeures dans le main et où on ne souhaitait pas avoir trop d'argument dans la méthode Initialize.
+  // // On initialise les condition limites ici. La configuration quelque peu redondante avec Laplacian2D::Initialize vient d'une ancienne version du code de notre TER dans laquelle on initialisait toutes ces valeurs dans le main et où on ne souhaitait pas avoir trop d'arguments dans la méthode Initialize.
 
   _CL_bas = CL_bas;
   _CL_haut = CL_haut;
@@ -88,7 +88,7 @@ void Laplacian2D::UpdateCL(int num_it)
 
 void EC_ClassiqueP::InitializeMatrix()
 {
-  // // On initialise la matrice penta diagonale ici.
+  // // On initialise la matrice pentadiagonale ici.
 
 
 
@@ -122,7 +122,7 @@ void EC_ClassiqueP::InitializeMatrix()
       if (i%_Nx==0)
         LapMat[1][i]=0.;
 
-      if (i%_Nx==_Nx-1) //hahaha les parenthèses mdr
+      if (i%_Nx==_Nx-1)
         LapMat[3][i]=0.;
 
       if(i<_Nx)
@@ -176,13 +176,11 @@ void EC_ClassiqueP::InitializeMatrix()
       _LapMatloc[i] = vectorsplit(LapMat[i]);
     }
 
-  // printvect(_LapMatloc[3]);
-
 }
 
 void EC_ClassiqueP::IterativeSolver (int nb_iterations)
 {
-  // // Cette méthode est au coeur de la résolution du problème et elle nous permet de générer le résultat. <- PEUT MIEUX FAIRE
+  // // Cette méthode est au coeur de la résolution du problème, elle permet d'effectuer la marche en temps
   
   
   MPI_Status status;
@@ -207,7 +205,7 @@ void EC_ClassiqueP::IterativeSolver (int nb_iterations)
   for( int i=0 ; i<=nb_iterations ; i++)
     {
       if (_save_all_file != "non")
-	EC_ClassiqueP::SaveSol(_save_all_file+"/sol_it_"+to_string(i)+".vtk"); // -> a changer pour enregistrer la solution de chaque proc puis ensuite faire un truc pour reconbiner
+	EC_ClassiqueP::SaveSol(_save_all_file+"/sol_it_"+to_string(i)+".vtk"); // -> partage solloc avec le processeur 0 pour qu'il puisse écrire la solution dans un fichier .vtk
      
       if ((_save_points_file != "non") and (_Me == 0))
 	{
@@ -248,7 +246,7 @@ void EC_ClassiqueP::IterativeSolver (int nb_iterations)
 	  MPI_Send(&_solloc[0],iN-i1+1,MPI_DOUBLE,0,100*_Me,MPI_COMM_WORLD);
 	}
 
-      EC_ClassiqueP::ConditionsLimites(i);  // -> a changer pour faire des vecteurs locaux
+      EC_ClassiqueP::ConditionsLimites(i); 
       //--------------------------------------------------------------------------
       //Prise en compte du terme source :
       for (int k=0 ; k < Nloc ;k++)
@@ -279,7 +277,7 @@ void EC_ClassiqueP::IterativeSolver (int nb_iterations)
 	}
       
       //------------------------------------------------------------------------
-      int kmax = _Nx*_Ny +100; //Pour une matrice de taille n le GC met max n étapes en théorie, comme on veut être sûr qu'il converge 
+      int kmax = _Nx*_Ny +100; //Pour une matrice de taille n le GC met max n étapes en théorie, comme on veut être sûr qu'il converge on prend une petite marge
       
       _solloc = CGPara(_LapMatloc,_floc,_solloc,0.0000001,kmax,_Nx,_Ny);
 
@@ -315,7 +313,7 @@ void EC_ClassiqueP::IterativeSolver (int nb_iterations)
 
 void Laplacian2D::SaveSol(string name_file)
 {
-  // // Cette méthode est celle qui nous permet d'enregistrer la solution sous forme de fichier lisible par paraview. Pour cela, elle envoie tout les vecteur locaux de la solution vers le processeur 0, qui va se charger de reformer le vecteur solution global puis d'écrire le résultat dans le bon format.
+  // // Cette méthode est celle qui nous permet d'enregistrer la solution sous forme de fichier lisible par paraview. Pour cela, elle envoie tout les vecteurs locaux solloc vers le processeur 0, qui va se charger de reformer le vecteur solution global puis d'écrire le résultat dans le bon format.
 
   MPI_Status status;
 
