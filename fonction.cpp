@@ -36,11 +36,9 @@ std::vector<double> prodMVC(std::vector<std::vector<double> > Aloc, std::vector<
   charge(N,Np,Me,i1,iN);
 
   int Nloc = iN-i1+1;
+	
 
-
-  //QU'EST-CE QUE VOUS AVEZ FAIT ? COMMENTEZ UN PEU !
-
-  if (Me%2 == 0)
+  if (Me%2 == 0) // Comme chacun des procs doit envoyer et recevoir un message, pour éviter que tout le monde soit bloqué en phase d'envoi sans pouvoir recevoir les messages des autres, on dit que les procs de rang pair envoient et que les autres reçoivent
   {
     if (Me != Np-1)
     {
@@ -60,7 +58,7 @@ std::vector<double> prodMVC(std::vector<std::vector<double> > Aloc, std::vector<
     }
   }
 
-  if (Me%2 == 1)
+  if (Me%2 == 1) //Ensuite on fait le contraire, les rangs impairs envoient, les autres reçoivent
   {
     if (Me != Np-1)
     {
@@ -79,7 +77,7 @@ std::vector<double> prodMVC(std::vector<std::vector<double> > Aloc, std::vector<
       MPI_Recv(&x_bas[0],nx,MPI_DOUBLE,Me+1,100,MPI_COMM_WORLD, &status);
     }
   }
-  //Après c'est plutôt pas trop mal commenté
+
 
 
 
@@ -200,7 +198,7 @@ std::vector<double> prodMVC(std::vector<std::vector<double> > Aloc, std::vector<
 
 double dot(std::vector<double> uloc, std::vector<double> vloc) 
 {
-  // //Calcul le produit scalaire entre 2 vecteur et envoie le résultat à tout les processeurs.
+  // //Calcul le produit scalaire entre 2 vecteurs et envoie le résultat à tous les processeurs.
 
 
   int Nloc = uloc.size();
@@ -245,9 +243,7 @@ std::vector<double> vectorsplit(std::vector<double> u)
 
 void Diag_init(int nx, int ny, std::vector<std::vector<double> >& A)
 {
-  // IL SERT A QUELQUE CHOSE CE TRUC ????
-
-  // SI NON LE VIRER !
+  // Cette méthode nous a permis de tester nos algorithme au début mais n'est plus utilisée dans le code...
 
 
   double alpha, beta, gamma, dx, dy;
@@ -289,9 +285,6 @@ std::vector<double> CGPara (std::vector<std::vector<double> > Aloc, std::vector<
 {
   // // Algorithme du gradient conjugué parallèle qui prend en argument uniquement des vecteurs locaux et renvoie un vecteur local.
 
-
-  // CODE A COMMENTER !
-
   int i1, iN, Nloc, k, Me, Np;
 
   double norm_r, nr_carre, nr2_carre;
@@ -320,7 +313,7 @@ std::vector<double> CGPara (std::vector<std::vector<double> > Aloc, std::vector<
   k = 0;
 
   nr_carre = dot(rloc,rloc);
-  norm_r = sqrt(nr_carre);
+  norm_r = sqrt(nr_carre); //On stocke ces deux variables puisqu'on s'en sert toutes les deux plusieurs fois dans la suite
 
 
   while ((norm_r > err) and (k<kmax))
