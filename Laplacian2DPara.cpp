@@ -10,7 +10,7 @@ Laplacian2D::Laplacian2D()
 Laplacian2D::~Laplacian2D()
 {}
 
-void Laplacian2D::Initialize(double x_min, double x_max, double y_min, double y_max, int Nx, int Ny, double a, double deltaT, int Me, int Np, string Source)
+void Laplacian2D::Initialize(double x_min, double x_max, double y_min, double y_max, int Nx, int Ny, double a, double deltaT, int Me, int Np, string Source, string save_all_file, string save_points_file, int number_saved_points, vector< vector<double> > saved_points)
 {
   // // On  initialise les constantes connues de tous les processeurs.
 
@@ -27,6 +27,17 @@ void Laplacian2D::Initialize(double x_min, double x_max, double y_min, double y_
   _Me = Me;
   _Np = Np;
   _Source = Source;
+  _save_all_file = save_all_file;
+  _save_points_file = save_points_file;
+  _number_saved_points = number_saved_points;
+  _saved_points = saved_points;
+
+  if (_save_all_file != "non") //On supprime l'ancien fichier qui contient les solutions au cours du temps et on en crée un nouveau
+    {
+      system(("rm -Rf "+_save_all_file).c_str());
+      system(("mkdir -p ./"+_save_all_file).c_str());
+    }
+  
 }
 
 void Laplacian2D::InitializeCI(double CI)
@@ -172,61 +183,35 @@ void EC_ClassiqueP::InitializeMatrix()
 void EC_ClassiqueP::IterativeSolver (int nb_iterations)
 {
   // // Cette méthode est au coeur de la résolution du problème et elle nous permet de générer le résultat. <- PEUT MIEUX FAIRE
-
-  //c'est le bordel pour  afficher les solutions en des points particuliers mais je vais changer ça quand j'aurais le temps, en attendant ça marche. <- Je le fais demain, j'ai pas eu le temps.
-
-  system("rm -Rf EC_ClassiqueP");
-  system("mkdir -p ./EC_ClassiqueP");
-
+  
+  
   MPI_Status status;
 
   int i1,iN;
   charge(_Nx*_Ny,_Np,_Me,i1,iN);
   int Nloc = iN-i1 +1;
 
-
-  /*
-  string _save_points_file ="sol_points_para";
-  system(("rm -Rf "+_save_points_file).c_str());
-  system(("mkdir -p ./"+_save_points_file).c_str());
-
-  int _number_saved_points = 6;
-  vector<vector <double> > _saved_points;
-  _saved_points.resize(_number_saved_points);
-  for (int i=0; i<6; i++)
-    {
-      _saved_points[i].resize(2);
-      _saved_points[i][0] = 0.001*i;
-      _saved_points[i][1] = 0.0025;
-    }
-
- 
-
+  //Sauvegarde d'un points ou plusieurs points particuliers au cours du temps:------------------------------------------------------------------------------------
+  ofstream* flux_pts(new ofstream);
   vector<double> _sol;
 
-
-  vector< shared_ptr<ofstream> > mes_flux;
-
-  if(_Me ==0)
+  if(_save_points_file != "non")
     {
-      for (int i=0; i<_number_saved_points; i++)
-	{ 
-	  shared_ptr<ofstream> flux(new ofstream);
-	  flux->open(_save_points_file+"/point_"+to_string(i)+".txt", ios::out);
-	  mes_flux.push_back(flux);
-	}
+      //Si on sauvegarde des points en particulier, on initialise l'ouverture des fichiers ici.
+      flux_pts->open(_save_points_file+".txt", ios::out);
+      _sol.resize(_Nx*_Ny);
     }
-*/
+  //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
   for( int i=0 ; i<=nb_iterations ; i++)
     {
-      EC_ClassiqueP::SaveSol("EC_ClassiqueP/sol_it_"+to_string(i)+".vtk"); // -> a changer pour enregistrer la solution de chaque proc puis ensuite faire un truc pour reconbiner
-      /*
-      if(_Me ==0)
+      if (_save_all_file != "non")
+	EC_ClassiqueP::SaveSol(_save_all_file+"/sol_it_"+to_string(i)+".vtk"); // -> a changer pour enregistrer la solution de chaque proc puis ensuite faire un truc pour reconbiner
+     
+      if ((_save_points_file != "non") and (_Me == 0))
 	{
-	  
-	  _sol.resize(_Nx*_Ny);
+      
 	  for (int i=0; i<=iN; i++)
 	    {
 	      _sol[i] = _solloc[i];
@@ -249,22 +234,19 @@ void EC_ClassiqueP::IterativeSolver (int nb_iterations)
 		}
 	    }
 
-	  char* truc = new char;
-	  for (int j=0; j<_number_saved_points; j++)
-	    {
-	      double truc_b1, truc_b2;
-	      truc_b1 = i*_deltaT;
-	      int pos = floor((_saved_points[j][0]/_h_x) + _Nx*floor(_saved_points[j][1]/_h_y));
-	      truc_b2 = _sol[pos] ;
-	      sprintf(truc, "%f  %f", truc_b1, truc_b2);
-	      mes_flux[j]->write(truc,16);
-	      mes_flux[j]->write("\n",1);
-	    }
+	  *flux_pts<<i*_deltaT<<" ";
+	   //char* truc = new char;
+	   for (int j=0; j<_number_saved_points; j++)
+	     {
+	       int pos = floor(_saved_points[j][0]/_h_x) + _Nx*floor(_saved_points[j][1]/_h_y);
+	       *flux_pts<<_sol[pos]<<" ";
+	     }
+	   *flux_pts<<endl;	  
 	}
-      else
+      if ((_save_points_file != "non") and (_Me != 0))
 	{
 	  MPI_Send(&_solloc[0],iN-i1+1,MPI_DOUBLE,0,100*_Me,MPI_COMM_WORLD);
-	  }*/
+	}
 
       EC_ClassiqueP::ConditionsLimites(i);  // -> a changer pour faire des vecteurs locaux
       //--------------------------------------------------------------------------
@@ -302,7 +284,7 @@ void EC_ClassiqueP::IterativeSolver (int nb_iterations)
 	  int p = floor((((double)i)/((double)nb_iterations))*100);
 	  printf( "[" );
 	  for(i_barre=0;i_barre<=p;i_barre+=2) printf( "*" );
-	  for (;i_barre<100; i_barre+=2 ) printf( "-" );
+	  for (;i_barre<=100; i_barre+=2 ) printf( "-" );
 	  printf( "] %3d %%", p );
 	  
 	  for(i_barre=0;i_barre<59;++i_barre) printf( "%c", 8 );
@@ -313,16 +295,12 @@ void EC_ClassiqueP::IterativeSolver (int nb_iterations)
 
     }
 
-  /*
-  if(_Me ==0)
-    {
-      for (int i=0; i<_number_saved_points; i++)
-	{ 
-	  mes_flux[i]->close();
-	}
 
+  if ((_save_points_file != "non") and (_Me == 0))
+    {
+      flux_pts->close();
     }
-  */
+  delete flux_pts;
 
   if (_Me == 0)//Barre de chargement
     { printf("\n");}

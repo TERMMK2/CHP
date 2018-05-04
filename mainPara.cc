@@ -23,16 +23,16 @@ int main(int argc, char * argv[])
   MPI_Comm_size(MPI_COMM_WORLD, &Np); // get totalnodes
   MPI_Comm_rank(MPI_COMM_WORLD, &Me);
 
-  int Nx = 200;
-  int Ny = 200;
+  int Nx = 300;
+  int Ny = 300;
 
   double xmin = 0.;
-  double xmax = 0.01;
+  double xmax = 1.;
   double ymin = 0.;
-  double ymax = 0.01;
+  double ymax = 1.;
 
-  double a = 1./(1500*1000);
-  double deltaT = 0.05;
+  double a = 1.;
+  double deltaT = 0.2;
   double tfinal = 100.;
 
   string CL_bas = "Dirichlet"; // "Neumann" , "Dirichlet"
@@ -54,18 +54,36 @@ int main(int argc, char * argv[])
   int nb_iterations = int(ceil(tfinal/deltaT));
   string Equation = "EC_ClassiqueP";
 
-  string Source = "trigonométrique"; //Peut prendre non, polynomial ou trigonometrique. 
+  string Source = "polynomial"; //Peut prendre non, polynomial ou trigonometrique. 
   //Choisir trigonométrique met à jour les conditions limites directement.
 
-  double CI = 0.4;
+  double CI = 1;
 
+  
+  string save_all_file = "Polyomial";
+  
+  string save_points_file = "non";
+  int number_saved_points=6;
+  vector<vector <double> > saved_points;
+  saved_points.resize(number_saved_points);
+  for (int i=0; i<6; i++)
+    {
+      saved_points[i].resize(2);
+      saved_points[i][0] = 0.001*i;
+      saved_points[i][1] = 0.0025;
+    }
+
+  
   Laplacian2D *Lap;
-
   Lap = new EC_ClassiqueP();
-  Lap->Initialize(xmin,xmax,ymin,ymax,Nx,Ny,a,deltaT, Me, Np, Source);
+
+
+  Lap->Initialize(xmin,xmax,ymin,ymax,Nx,Ny,a,deltaT, Me, Np, Source, save_all_file, save_points_file, number_saved_points, saved_points);
   Lap->InitializeCI(CI);
   Lap->InitializeCL(CL_bas, CL_haut, CL_gauche, CL_droite, Val_CL_bas, Val_CL_haut, Val_CL_gauche, Val_CL_droite);
   Lap->InitializeMatrix();
+
+
   auto start = chrono::high_resolution_clock::now();
   Lap->IterativeSolver(nb_iterations);
   auto finish = chrono::high_resolution_clock::now();

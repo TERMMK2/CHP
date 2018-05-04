@@ -26,6 +26,12 @@ class Laplacian2D // pas fini de modifier
     int _Me,_Np;
 
     std::string _Source;
+    
+    std::string _save_all_file;
+
+    std::string _save_points_file;
+    int _number_saved_points;
+    std::vector<std::vector <double> > _saved_points;
 
 
 
@@ -36,7 +42,7 @@ class Laplacian2D // pas fini de modifier
     virtual ~Laplacian2D();
 
 
-    void Initialize(double x_min, double x_max, double y_min, double y_max, int Nx, int Ny, double a, double deltaT, int Me, int Np, std::string Source);
+    void Initialize(double x_min, double x_max, double y_min, double y_max, int Nx, int Ny, double a, double deltaT, int Me, int Np, std::string Source, std::string save_all_file, std::string _save_points_file, int number_saved_points,std::vector<std::vector <double> > saved_points );
 
     void InitializeCL(std::string CL_bas, std::string CL_haut, std::string CL_gauche, std::string CL_droite, double Val_CL_bas, double Val_CL_haut, double Val_CL_gauche, double Val_CL_droite);
 
