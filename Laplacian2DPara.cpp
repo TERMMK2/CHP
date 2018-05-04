@@ -22,7 +22,7 @@ void Laplacian2D::Initialize(double x_min, double x_max, double y_min, double y_
   _Ny = Ny;
   _a = a;
   _deltaT = deltaT;
-  _h_y = (y_min-y_max)/(Ny+1.);
+  _h_y = (y_max-y_min)/(Ny+1.);
   _h_x = (x_max-x_min)/(Nx+1.);
   _Me = Me;
   _Np = Np;
@@ -265,18 +265,23 @@ void EC_ClassiqueP::IterativeSolver (int nb_iterations)
 	  if (_Source == "polynomial")
 	    {
 	       
-	      _floc[k] = _solloc[k] + 2*(y - y*y + x -x*x);
+	      _floc[k] = _solloc[k] + 2*_deltaT*(y - y*y + x -x*x);
 	    }
 	  if(_Source == "trigonometrique")
 	    {
-	      _floc[k] = _solloc[k] + sin(x) +cos(y) ;
+	      _floc[k] = _solloc[k] + _deltaT*(sin(x) +cos(y)) ;
 	    }
+	  if(_Source == "instationnaire")
+	    {
+	      _flock[k] = _solloc[k] + _deltaT*exp( -(x/2.)*(x/2.) )*exp( -(y/2)*(y/2) )*cos(M_PI*i*_deltaT/2.);
+	    }
+
 	}
       
       //------------------------------------------------------------------------
       int kmax = _Nx*_Ny +100; //Pour une matrice de taille n le GC met max n étapes en théorie, comme on veut être sûr qu'il converge 
       
-      _solloc = CGPara(_LapMatloc,_floc,_solloc,0.0001,kmax,_Nx,_Ny);
+      _solloc = CGPara(_LapMatloc,_floc,_solloc,0.0000001,kmax,_Nx,_Ny);
 
       if (_Me == 0)//Barre de chargement
 	{
@@ -466,14 +471,17 @@ void EC_ClassiqueP::ConditionsLimites(int num_it)
      }
 
 
-  // if (_Source == "trigonometrique")
-  //   {
-  //     for (int j = 0; j < _Nx ; j++)
-  //       {
-  // 	  double x
-  // 	  if ((j<=iN) and (j>=i1))
-  // 	    _solloc[j-i1] = _solloc[j-i1]-gamma*_Val_CL_haut;
-  //       }
+  if (_Source == "trigonometrique")
+    {
+      for (int j = 0; j < _Nx ; j++)
+        {
+  	  if ((j<=iN) and (j>=i1))
+	    {
+	      double x = (j%_Nx)*_h_x ;
+	      double y = (j/_Nx)*_h_y
+	      _solloc[j-i1] = _solloc[j-i1]-gamma*;
+	    }
+        }
 
 
 

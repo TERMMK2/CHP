@@ -32,8 +32,8 @@ int main(int argc, char * argv[])
   double ymax = 1.;
 
   double a = 1.;
-  double deltaT = 0.2;
-  double tfinal = 100.;
+  double deltaT = 0.005;
+  double tfinal = 1.;
 
   string CL_bas = "Dirichlet"; // "Neumann" , "Dirichlet"
   string CL_haut = "Dirichlet";
@@ -42,10 +42,7 @@ int main(int argc, char * argv[])
 
   double Val_CL_bas = 0; //Flux si CL_bas == "Neumann", Température si CL_bas == "Dirichlet"
   double Val_CL_haut = 0;
-  double Val_CL_gauche = 0; //Mettre 0 si CL_gauche == "Neumann_non_constant" 
-  //                                    ^
-  //                                    |
-  //                               Vraiment besoin ?????? (Motte)
+  double Val_CL_gauche = 0; 
   double Val_CL_droite = 0;
 
 
@@ -57,7 +54,7 @@ int main(int argc, char * argv[])
   string Source = "polynomial"; //Peut prendre non, polynomial ou trigonometrique. 
   //Choisir trigonométrique met à jour les conditions limites directement.
 
-  double CI = 1;
+  double CI = 0.1;
 
   
   string save_all_file = "Polyomial";

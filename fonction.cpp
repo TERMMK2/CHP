@@ -350,7 +350,6 @@ std::vector<double> CGPara (std::vector<std::vector<double> > Aloc, std::vector<
       k++;
     }
 
-
   return xloc;
 
 }

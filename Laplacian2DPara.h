@@ -10,6 +10,12 @@
 #include "mpi.h"
 #include "fonction.h"
 
+#ifndef M_PI
+   #define M_PI 3.141592653589793238462643383279
+#endif
+
+
+
 class Laplacian2D // pas fini de modifier
 {
 
