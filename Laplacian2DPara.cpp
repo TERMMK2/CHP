@@ -273,7 +273,7 @@ void EC_ClassiqueP::IterativeSolver (int nb_iterations)
 	    }
 	  if(_Source == "instationnaire")
 	    {
-	      _flock[k] = _solloc[k] + _deltaT*exp( -(x/2.)*(x/2.) )*exp( -(y/2)*(y/2) )*cos(M_PI*i*_deltaT/2.);
+	      _floc[k] = _solloc[k] + _deltaT*exp( -(x/2.)*(x/2.) )*exp( -(y/2)*(y/2) )*cos(M_PI*i*_deltaT/2.);
 	    }
 
 	}
@@ -346,7 +346,7 @@ void Laplacian2D::SaveSol(string name_file)
 	    }
 	}
 
-      using namespace std;
+
       ofstream mon_flux;
       mon_flux.open(name_file, ios::out);
       mon_flux << "# vtk DataFile Version 3.0" << endl
@@ -370,6 +370,41 @@ void Laplacian2D::SaveSol(string name_file)
 	}
 
       mon_flux.close();
+
+
+      /*
+      string name_file2 = "comparaison.txt";
+
+      ofstream flux_compa;
+      flux_compa.open(name_file2, ios::out);
+      flux_compa << "# vtk DataFile Version 3.0" << endl
+	       << "cell" << endl
+	       << "ASCII" << endl
+	       << "DATASET STRUCTURED_POINTS" << endl
+	       << "DIMENSIONS " << _Nx << " " << _Ny << " 1" << endl
+	       << "ORIGIN 0 0 0" << endl
+	       << "SPACING " + to_string((_x_max-_x_min)/_Nx)+ " " + to_string((_y_max-_y_min)/_Ny) +" 1" << endl
+	       << "POINT_DATA " << _Nx*_Ny << endl
+	       << "SCALARS sample_scalars double" << endl
+	       << "LOOKUP_TABLE default" << endl;
+
+      for(int i=_Ny-1; i>=0; i--)
+	{
+	  for(int j=0; j<_Nx; j++)
+	    {
+	      double x = j*_h_y;
+	      double y = i*_h_x;
+
+	      //flux_compa << sol[j + i*_Nx] - ( x*x - x )*( y*y - y ) << " ";
+	      //flux_compa << sol[j + i*_Nx] - ( sin(x) + cos(y) )<<" ";
+	    }
+	  flux_compa << endl;
+	}
+      flux_compa.close();
+      */
+      //Cette partie commentée nous a permis de comparer les résultats théoriques et numériques des solutions pour les cas avec un terme source polynomial et trigonometrique.
+      
+
     }
   else
     {
@@ -473,19 +508,53 @@ void EC_ClassiqueP::ConditionsLimites(int num_it)
 
   if (_Source == "trigonometrique")
     {
-      for (int j = 0; j < _Nx ; j++)
+      for (int j = 0; j < _Nx ; j++) // En haut
         {
   	  if ((j<=iN) and (j>=i1))
 	    {
 	      double x = (j%_Nx)*_h_x ;
-	      double y = (j/_Nx)*_h_y
-	      _solloc[j-i1] = _solloc[j-i1]-gamma*;
+	      double y = (j/_Nx)*_h_y ;
+	      
+	      _solloc[j-i1] = _solloc[j-i1]-gamma*(sin(x) + cos(y));
+	    }
+        }
+      
+      for (int j = 0; j < _Nx ; j++) // En bas
+        {
+	  if ((_Nx*(_Ny -1)+ j<=iN) and (_Nx*(_Ny -1)+ j>=i1))
+	    {
+	      double x = ( (_Nx*(_Ny -1)+ j)%_Nx )*_h_x ;
+	      double y = ( (_Nx*(_Ny -1)+ j)/_Nx )*_h_y ;
+
+	      _solloc[_Nx*(_Ny -1)+ j -i1] = _solloc[_Nx*(_Ny -1)+ j -i1]-gamma*(sin(x) + cos(y));
+	    }
+        }
+      
+      for (int i = 0; i < _Ny; i++) // A gauche
+        {
+	  if ((i*_Nx<=iN) and (i*_Nx>=i1))
+	    {
+	      double x = ( (i*_Nx)%_Nx )*_h_x ;
+	      double y = ( (i*_Nx)/_Nx )*_h_y ;
+
+	      _solloc[i*_Nx -i1] = _solloc[i*_Nx -i1]-beta*(sin(x) + cos(y));
+	    }
+        }
+
+      for (int i = 0; i < _Ny; i++) // A droite
+        {
+	  if (((i+1)*_Nx - 1 <= iN) and ((i+1)*_Nx - 1 >= i1))
+	    {
+	      double x = ( ((i+1)*_Nx - 1)%_Nx)*_h_x ;
+	      double y = ( ((i+1)*_Nx - 1)/_Nx)*_h_y ;
+
+	      _solloc[(i+1)*_Nx - 1 -i1] = _solloc[(i+1)*_Nx - 1 -i1]-beta*(sin(x) + cos(y));
 	    }
         }
 
 
+     }
 
 
-  //   }
 
 }

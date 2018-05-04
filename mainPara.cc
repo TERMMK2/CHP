@@ -23,22 +23,22 @@ int main(int argc, char * argv[])
   MPI_Comm_size(MPI_COMM_WORLD, &Np); // get totalnodes
   MPI_Comm_rank(MPI_COMM_WORLD, &Me);
 
-  int Nx = 300;
-  int Ny = 300;
+  int Nx = 500;
+  int Ny = 10;
 
   double xmin = 0.;
-  double xmax = 1.;
+  double xmax = 0.04;
   double ymin = 0.;
-  double ymax = 1.;
+  double ymax = 0.005;
 
-  double a = 1.;
-  double deltaT = 0.005;
-  double tfinal = 1.;
+  double a = 1./(1500.*1000.); //Mettre 1. si on fait les cas tests de l'énoncé et 1./(1500.*1000.) si on veut comparer avec notre TER.
+  double deltaT = 0.05;
+  double tfinal = 100;
 
-  string CL_bas = "Dirichlet"; // "Neumann" , "Dirichlet"
-  string CL_haut = "Dirichlet";
-  string CL_gauche = "Dirichlet"; //Peut valoir "Neumann_non_constant"
-  string CL_droite = "Dirichlet";
+  string CL_bas = "Neumann"; // "Neumann" , "Dirichlet"
+  string CL_haut = "Neumann";
+  string CL_gauche = "Neumann_non_constant"; //Peut valoir "Neumann_non_constant"
+  string CL_droite = "Neumann";
 
   double Val_CL_bas = 0; //Flux si CL_bas == "Neumann", Température si CL_bas == "Dirichlet"
   double Val_CL_haut = 0;
@@ -49,24 +49,23 @@ int main(int argc, char * argv[])
 
 
   int nb_iterations = int(ceil(tfinal/deltaT));
-  string Equation = "EC_ClassiqueP";
 
-  string Source = "polynomial"; //Peut prendre non, polynomial ou trigonometrique. 
-  //Choisir trigonométrique met à jour les conditions limites directement.
+  string Source = "non"; //Peut prendre non, polynomial, trigonometriqueou instationnaire. 
+  //Choisir trigonométrique met à jour les conditions limites automatiquement.
 
-  double CI = 0.1;
+  double CI = 293.;
 
   
-  string save_all_file = "Polyomial";
+  string save_all_file = "TER"; //Mettre non si on ne souhaite pas enregistrer la solution globale au cours du temps sous une forme lisible par paraview
   
-  string save_points_file = "non";
-  int number_saved_points=6;
+  string save_points_file = "points_TER"; //Mettre non si l'on 
+  int number_saved_points=3;
   vector<vector <double> > saved_points;
   saved_points.resize(number_saved_points);
-  for (int i=0; i<6; i++)
+  for (int i; i<number_saved_points; i++)
     {
       saved_points[i].resize(2);
-      saved_points[i][0] = 0.001*i;
+      saved_points[i][0] = 0.002*i;
       saved_points[i][1] = 0.0025;
     }
 
